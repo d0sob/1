@@ -1,7 +1,7 @@
-import SceneInit from "./src/scene.js";
-import Box from "./src/box.js";
-import Sphere from "./src/sphere.js";
-import Capsule from "./src/Capsule.js";
+import SceneInit from "./scene.js";
+import Box from "./box.js";
+import Sphere from "./sphere.js";
+import Capsule from "./Capsule.js";
 
 class Main {
   constructor() {
