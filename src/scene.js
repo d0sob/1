@@ -33,7 +33,7 @@ class SceneInit {
     // ADDING MODEL
     this.loader = new GLTFLoader();
     this.loader.load(
-      "../nightmare.glb",
+      "./src/nightmare.glb",
       (gltf) => {
         this.bbox = new THREE.Box3().setFromObject(gltf.scene);
         this.center = this.bbox.getCenter(new THREE.Vector3());
