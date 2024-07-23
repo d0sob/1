@@ -8,11 +8,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "three": "^0.166.1"
-  },
-  "devDependencies": {
-    "vite": "^5.3.4"
-  }
+  "description": ""
 }

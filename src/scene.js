@@ -58,7 +58,7 @@ class SceneInit {
 
     window.addEventListener("mousemove", (e) => this.onMouseMove(e), false);
 
-    this.radius = 5;
+    this.radius = 8;
     this.speed = 0.01;
     this.angle = 0;
     this.target = new THREE.Vector3(0, 0, 0);
@@ -80,6 +80,12 @@ class SceneInit {
     this.scene.children.forEach((child) => {
       if (child instanceof THREE.Mesh && child.userData.zoom == true) {
         child.scale.set(1, 1, 1);
+        child.material = new THREE.MeshBasicMaterial({
+          color: "white",
+          wireframe: true,
+          transparent: true,
+          opacity: 0,
+        });
       }
     });
     intersects.forEach((intersect) => {
@@ -88,6 +94,10 @@ class SceneInit {
         intersect.object.userData.zoom == true
       ) {
         intersect.object.scale.set(2, 2, 2);
+        intersect.object.material = new THREE.MeshBasicMaterial({
+          color: "#00FF00",
+          wireframe: true,
+        });
       }
     });
   }
