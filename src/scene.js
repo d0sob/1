@@ -22,18 +22,19 @@ class SceneInit {
 
     // ADDING LIGHTS
     ////////////////////////////////////////////////////
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 1);
-    this.scene.add(this.ambientLight);
+    // this.ambientLight = new THREE.PointLight(0xffffff, 1);
+    // this.ambientLight.position.set(2, 4, 3);
+    // this.scene.add(this.ambientLight);
 
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    this.directionalLight.position.set(5, 10, 7.5);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    this.directionalLight.position.set(-5, 10, -7.5);
     this.scene.add(this.directionalLight);
-    /////////////////////////////////////////////////////
+    /////////////////////////////////////////////////
 
     // ADDING MODEL
     this.loader = new GLTFLoader();
-    this.loader.load(
-      "./src/nightmare.glb",
+    this.model = this.loader.load(
+      "./src/newHead.glb",
       (gltf) => {
         this.bbox = new THREE.Box3().setFromObject(gltf.scene);
         this.center = this.bbox.getCenter(new THREE.Vector3());
@@ -113,6 +114,7 @@ class SceneInit {
     const x = this.target.x + this.radius * Math.cos(this.angle);
     const z = this.target.z + this.radius * Math.sin(this.angle);
     this.camera.position.set(x, this.camera.position.y, z);
+    this.directionalLight.position.set(x, this.directionalLight.position.y, z);
     this.camera.lookAt(this.target);
 
     this.renderer.render(this.scene, this.camera);
