@@ -1,12 +1,12 @@
 {
-  "name": "finalproject",
+  "name": "1",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "d0sob",
   "license": "ISC",
-  "description": ""
+  "description": "Just something random I made"
 }

@@ -42,7 +42,7 @@ export default class ModelLoader {
     if (this.model) {
       this.model.traverse((child) => {
         if (child.isMesh) {
-          child.material.emissive = new THREE.Color("pink"); // Green glow
+          child.material.emissive = new THREE.Color("pink");
           child.material.emissiveIntensity = intentensity;
         }
       });
