@@ -20,6 +20,9 @@ class Main {
 
   animate() {
     function animateFrame() {
+      this.loader.spin(0.1);
+      this.loader.changeSize(0.001, 3);
+      this.loader.glowModel(0.6);
       this.myScene.render();
       requestAnimationFrame(animateFrame.bind(this));
     }

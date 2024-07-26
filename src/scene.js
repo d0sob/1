@@ -1,9 +1,10 @@
 import * as THREE from "three";
-// import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 class SceneInit {
   constructor() {
     this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.Fog(0xccccccc, 16, 1);
+    this.scene.background = new THREE.Color("skyblue");
     this.camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
@@ -23,27 +24,6 @@ class SceneInit {
     this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
     this.directionalLight.position.set(-5, 10, -7.5);
     this.scene.add(this.directionalLight);
-
-    // this.loader = new GLTFLoader();
-    // this.model = this.loader.load(
-    //   "./src/newHead.glb",
-    //   (gltf) => {
-    //     this.bbox = new THREE.Box3().setFromObject(gltf.scene);
-    //     this.center = this.bbox.getCenter(new THREE.Vector3());
-
-    //     gltf.scene.position.sub(this.center);
-
-    //     this.scale = 1;
-    //     gltf.scene.scale.set(this.scale, this.scale, this.scale);
-
-    //     this.scene.add(gltf.scene);
-    //   },
-    //   undefined,
-    //   (e) => {
-    //     console.error(e);
-    //   }
-    // );
-
     this.target = new THREE.Vector3(0, 0, 0);
 
     window.addEventListener("resize", this.onWindowResize.bind(this), false);

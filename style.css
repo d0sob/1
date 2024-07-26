@@ -26,6 +26,9 @@ body, html {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 1;
-    color: white;
+    color: black;
+    border: 3px solid black;
+    padding: 4px;
+    background-color: rgba(255, 255, 255,0.7);
 }
  
