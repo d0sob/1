@@ -8,13 +8,10 @@ export default class ModelLoader {
       (gltf) => {
         this.box = new THREE.Box3().setFromObject(gltf.scene);
         this.center = this.box.getCenter(new THREE.Vector3());
-
         gltf.scene.position.sub(this.center);
-
         this.scale = 1;
         gltf.scene.scale.set(this.scale, this.scale, this.scale);
         this.model = gltf.scene;
-
         this.onLoad();
       },
       undefined,

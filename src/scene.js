@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 class SceneInit {
   constructor() {
@@ -20,10 +19,6 @@ class SceneInit {
       .getElementById("threejs-stuff")
       .appendChild(this.renderer.domElement);
 
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.target.set(0, 0, 0);
-    this.controls.update();
-
     this.renderer.toneMapping = THREE.NeutralToneMapping;
 
     this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -40,12 +35,17 @@ class SceneInit {
   }
 
   render() {
-    this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
 
   add(object) {
     this.scene.add(object);
+  }
+  getCamera() {
+    return this.camera;
+  }
+  getScene() {
+    return this.scene;
   }
 }
 

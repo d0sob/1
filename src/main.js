@@ -1,40 +1,44 @@
-import SceneInit from "./scene.js";
-import Plane from "./plane.js";
-// import ModelLoader from "./model.js";
+import * as imports from "./imports.js";
+
 class Main {
   constructor() {
-    this.myScene = new SceneInit();
-    this.myPlane = new Plane();
+    this.myScene = new imports.SceneInit();
+    this.myPlane = new imports.Plane();
+    this.Player = new imports.Capsule();
+    this.myBox = new imports.Box();
+    this.controls = new imports.Controls(
+      this.myScene.getCamera(),
+      this.Player.getMesh()
+    );
 
-    // this.loader = new ModelLoader();
-    // this.loader.onLoad = this.init.bind(this);
     this.init();
+    this.startPhysics();
+  }
+
+  async startPhysics() {
+    this.myphysics = new imports.Physics();
+    await this.myphysics.initPhysics(
+      this.myBox.getMesh(),
+      this.myBox.getPosition(),
+      this.myScene.getScene()
+    );
   }
 
   init() {
-    // if (this.loader.getMesh()) {
-    //   this.myScene.add(this.loader.getMesh());
-    // } else {
-    //   console.error("model not loaded");
-    // }
-
     this.myScene.add(this.myPlane.getMesh());
+    this.myScene.add(this.Player.getMesh());
+    this.myScene.add(this.myBox.getMesh());
+
+    console.log("objects added");
     this.animate();
   }
 
   animate() {
-    function animateFrame() {
-      // this.loader.spin(0.1);
-      // this.loader.changeSize(0.001, 3);
-      // this.loader.glowModel(0.6);
-      // this.myScene.render();
-      this.myPlane.getMesh().rotation.y += 0.01;
-      this.myPlane.movePlane();
+    this.animateFrame = () => {
+      requestAnimationFrame(this.animateFrame);
+    };
 
-      requestAnimationFrame(animateFrame.bind(this));
-    }
-
-    animateFrame.call(this);
+    this.animateFrame();
   }
 }
 

@@ -2,18 +2,19 @@ import * as THREE from "three";
 
 export default class Plane {
   constructor() {
-    this.geometry = new THREE.PlaneGeometry(5, 5);
+    this.geometry = new THREE.PlaneGeometry(10, 10);
     this.material = new THREE.MeshBasicMaterial({
       color: 0xff0000,
       side: THREE.DoubleSide,
     });
-    this.plane = new THREE.Mesh(this.geometry, this.material);
+    this.plane = new THREE.InstancedMesh(this.geometry, this.material, 1);
+    this.plane.rotation.x = Math.PI / 2;
+    this.plane.receiveShadow = true;
 
-    // Initialize movement properties
     this.goingUp = true;
     this.speed = 0.01;
     this.amplitude = 2;
-    this.plane.position.y = 0; // Set initial position
+    this.plane.position.y = 0;
   }
 
   getMesh() {
