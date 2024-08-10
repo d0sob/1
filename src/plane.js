@@ -14,11 +14,15 @@ export default class Plane {
     this.goingUp = true;
     this.speed = 0.01;
     this.amplitude = 2;
-    this.plane.position.y = 0;
+    this.position = new THREE.Vector3();
+    this.position.set(0, 0, 0);
   }
 
   getMesh() {
     return this.plane;
+  }
+  getPosition() {
+    return this.position;
   }
 
   movePlane() {

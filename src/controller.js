@@ -23,7 +23,8 @@ export default class Controls {
     });
   }
   handleKeyStrokes() {
-    const onKeyDown = function (e) {
+    document.addEventListener("keydown", (e) => {
+      // console.log(`Key down: ${e.code}`);
       switch (e.code) {
         case "KeyW":
           this.moveForward = true;
@@ -38,8 +39,10 @@ export default class Controls {
           this.moveRight = true;
           break;
       }
-    };
-    const onKeyUp = function (e) {
+    });
+
+    document.addEventListener("keyup", (e) => {
+      // console.log(`Key up: ${e.code}`);
       switch (e.code) {
         case "KeyW":
           this.moveForward = false;
@@ -54,42 +57,37 @@ export default class Controls {
           this.moveRight = false;
           break;
       }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("keyup", onKeyUp);
+    });
   }
+
   updateMovement() {
-    // this.time = performance.now();
-    // this.cameraMoveSpeed = 0.1;
-    // this.camera.position.copy(this.gamer.position);
-    // this.cameraDirection = new THREE.Vector3(0, 0, -1);
-    // this.cameraDirection.applyQuaternion(this.camera.quaternion);
-    // this.cameraRotation = new THREE.Euler(0, 0, 0, "YXZ");
-    // this.cameraRotation.setFromQuaternion(this.camera.quaternion);
-    // this.moveDirection = new THREE.Vector3();
-    // if (this.moveForward) {
-    //   this.moveDirection.add(this.cameraDirection);
-    // }
-    // if (this.moveBackward) {
-    //   this.moveDirection.sub(this.cameraDirection);
-    // }
-    // if (this.moveRight) {
-    //   this.rightDirection = this.cameraDirection
-    //     .clone()
-    //     .applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
-    //   this.moveDirection.add(this.rightDirection);
-    // }
-    // if (this.moveLeft) {
-    //   this.leftDirection = this.cameraDirection
-    //     .clone()
-    //     .applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-    //   this.moveDirection.add(this.leftDirection);
-    // }
-    // this.moveDirection.normalize();
-    // this.moveDirection.multiplyScalar(this.cameraMoveSpeed);
-    // this.gamer.position.z += this.moveDirection.z;
-    // this.gamer.position.x += this.moveDirection.x;
-    // this.prevTime = this.time;
-    // this.camera.position.lerp(this.gamer.position, this.cameraMoveSpeed);
+    // console.log("Move Forward:", this.moveForward);
+    // console.log("Move Backward:", this.moveBackward);
+    // console.log("Move Left:", this.moveLeft);
+    // console.log("Move Right:", this.moveRight);
+    const delta = 0.1; // Movement speed factor
+    const direction = new THREE.Vector3();
+
+    if (this.moveForward) {
+      direction.z -= delta;
+      // console.log("moving forward");
+    }
+    if (this.moveBackward) {
+      direction.z += delta;
+      // console.log("moving backward");
+    }
+    if (this.moveLeft) {
+      direction.x -= delta;
+      // console.log("moving left");
+    }
+    if (this.moveRight) {
+      direction.x += delta;
+      // console.log("moving right");
+    }
+
+    // Apply the movement direction to the camera
+    direction.applyQuaternion(this.camera.quaternion);
+    this.gamer.position.add(direction);
+    this.camera.position.copy(this.gamer.position);
   }
 }

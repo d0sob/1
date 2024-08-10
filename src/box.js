@@ -19,6 +19,11 @@ class Box {
   getPosition() {
     return this.position;
   }
+  translate() {
+    if (this.cube.position.y <= 5) {
+      this.cube.translateOnAxis(new THREE.Vector3(0, 0.01, 0.015), 10);
+    }
+  }
 }
 
 export default Box;
