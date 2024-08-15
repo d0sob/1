@@ -12,6 +12,7 @@
   "description": "Just something random I made",
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "three": "^0.167.1"
   }
 }

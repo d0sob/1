@@ -8,7 +8,7 @@ export default class Bullet {
     );
     this.mesh.position.copy(position);
     this.velocity = velocity;
-    this.lifespan = 100; // Adjust as needed
+    this.lifespan = 2;
   }
 
   update(delta) {

@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
-// https://github.com/d0sob/FirstPersonMovement/blob/main/index.html try from here
 export default class Controls {
   constructor(camera, gamer) {
     this.camera = camera;
@@ -38,6 +37,12 @@ export default class Controls {
         case "KeyD":
           this.moveRight = true;
           break;
+        case "Space":
+          this.moveUp = true;
+          break;
+        case "ShiftLeft":
+          this.moveDown = true;
+          break;
       }
     });
 
@@ -55,6 +60,12 @@ export default class Controls {
           break;
         case "KeyD":
           this.moveRight = false;
+          break;
+        case "Space":
+          this.moveUp = false;
+          break;
+        case "ShiftLeft":
+          this.moveDown = false;
           break;
       }
     });
@@ -83,6 +94,12 @@ export default class Controls {
     if (this.moveRight) {
       direction.x += delta;
       // console.log("moving right");
+    }
+    if (this.moveUp) {
+      direction.y += delta;
+    }
+    if (this.moveDown) {
+      direction.y -= delta;
     }
 
     // Apply the movement direction to the camera

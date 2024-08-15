@@ -1,67 +1,121 @@
 const express = require("express");
-const path = require("path");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io");
+const path = require("path");
+const THREE = require("three"); // Import THREE library
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+class Player {
+  constructor(id) {
+    this.id = id;
+    this.position = new THREE.Vector3(0, 74, 52);
+    this.health = Player.initialHealth;
+  }
 
-const players = {};
-const bullets = [];
+  static initialHealth = 100;
 
-// Serve static files from the current directory
-app.use(express.static(path.join(__dirname)));
+  move(position) {
+    this.position.set(position.x, position.y, position.z);
+  }
 
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  takeDamage(amount) {
+    this.health -= amount;
+    return this.health <= 0;
+  }
 
-  // Add new player
-  players[socket.id] = {
-    position: { x: 0, y: 0, z: 0 },
-  };
+  respawn() {
+    this.health = Player.initialHealth;
+    this.position.set(0, 74, 52); // Respawn position
+  }
+}
 
-  // Send current players to the new player
-  socket.emit("currentPlayers", players);
+class GameServer {
+  constructor() {
+    this.app = express();
+    this.server = http.createServer(this.app);
+    this.io = new Server(this.server);
+    this.players = {};
 
-  // Broadcast new player to all other clients
-  socket.broadcast.emit("newPlayer", {
-    id: socket.id,
-    position: players[socket.id].position,
-  });
+    this.app.use(express.static(path.join(__dirname)));
 
-  // Log current players
-  console.log("Current players:", players);
+    this.io.on("connection", (socket) => this.onConnection(socket));
+  }
 
-  // Handle player shooting
-  socket.on("shoot", (data) => {
-    const bulletData = {
-      position: data.position,
-      velocity: data.velocity,
-    };
-    bullets.push(bulletData);
-    console.log(`Player ${socket.id} shot a bullet:`, bulletData);
-    socket.broadcast.emit("playerShot", { bulletData });
-  });
+  onConnection(socket) {
+    console.log("A user connected:", socket.id);
+    const newPlayer = new Player(socket.id);
+    this.players[socket.id] = newPlayer;
 
-  // Handle player movement
-  socket.on("playerMoved", (position) => {
-    players[socket.id].position = position;
-    console.log(`Player ${socket.id} moved to position:`, position);
-    socket.broadcast.emit("playerMoved", { id: socket.id, position });
-  });
+    socket.emit("currentPlayers", this.players);
+    socket.broadcast.emit("newPlayer", newPlayer);
 
-  // Handle player disconnection
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    delete players[socket.id];
-    io.emit("playerDisconnected", socket.id);
-    console.log("Current players:", players);
-  });
-});
+    socket.on("playerMove", (data) => this.onPlayerMove(socket, data));
+    socket.on("shoot", (bulletData) => this.onShoot(socket, bulletData));
+    socket.on("playerHit", ({ playerId }) => this.onPlayerHit(playerId));
+    socket.on("disconnect", () => this.onDisconnect(socket));
+  }
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  onPlayerMove(socket, data) {
+    const player = this.players[socket.id];
+    if (player) {
+      player.move(data.position);
+      socket.broadcast.emit("playerMoved", player);
+    }
+  }
+
+  onShoot(socket, bulletData) {
+    const shooterId = socket.id;
+    socket.broadcast.emit("playerShot", { shooterId, bulletData });
+
+    for (const playerId in this.players) {
+      if (playerId !== shooterId) {
+        const player = this.players[playerId];
+        const bulletPosition = new THREE.Vector3(
+          bulletData.position.x,
+          bulletData.position.y,
+          bulletData.position.z
+        );
+        const distanceSquared =
+          player.position.distanceToSquared(bulletPosition);
+        if (distanceSquared < 1) {
+          if (player.takeDamage(2)) {
+            this.respawnPlayer(playerId);
+          } else {
+            this.io
+              .to(playerId)
+              .emit("updateHealth", { health: player.health });
+          }
+        }
+      }
+    }
+  }
+
+  onPlayerHit(playerId) {
+    const player = this.players[playerId];
+    if (player && player.takeDamage(2)) {
+      this.respawnPlayer(playerId);
+    } else {
+      this.io.to(playerId).emit("updateHealth", { health: player.health });
+    }
+  }
+
+  respawnPlayer(playerId) {
+    const player = this.players[playerId];
+    player.respawn();
+    this.io.emit("playerDied", playerId);
+  }
+
+  onDisconnect(socket) {
+    console.log("A user disconnected:", socket.id);
+    delete this.players[socket.id];
+    this.io.emit("playerDisconnected", socket.id);
+  }
+
+  start(port) {
+    this.server.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+    });
+  }
+}
+
+const gameServer = new GameServer();
+gameServer.start(3000);
