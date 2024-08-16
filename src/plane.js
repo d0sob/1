@@ -2,9 +2,9 @@ import * as THREE from "three";
 
 export default class Plane {
   constructor() {
-    this.geometry = new THREE.PlaneGeometry(10, 10);
+    this.geometry = new THREE.PlaneGeometry(50, 40);
     this.material = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
+      color: 0xffff00,
       side: THREE.DoubleSide,
     });
     this.plane = new THREE.InstancedMesh(this.geometry, this.material, 1);

@@ -16,16 +16,6 @@ class Player {
   move(position) {
     this.position.set(position.x, position.y, position.z);
   }
-
-  takeDamage(amount) {
-    this.health -= amount;
-    return this.health <= 0;
-  }
-
-  respawn() {
-    this.health = Player.initialHealth;
-    this.position.set(0, 74, 52); // Respawn position
-  }
 }
 
 class GameServer {
@@ -50,7 +40,6 @@ class GameServer {
 
     socket.on("playerMove", (data) => this.onPlayerMove(socket, data));
     socket.on("shoot", (bulletData) => this.onShoot(socket, bulletData));
-    socket.on("playerHit", ({ playerId }) => this.onPlayerHit(playerId));
     socket.on("disconnect", () => this.onDisconnect(socket));
   }
 
@@ -65,43 +54,6 @@ class GameServer {
   onShoot(socket, bulletData) {
     const shooterId = socket.id;
     socket.broadcast.emit("playerShot", { shooterId, bulletData });
-
-    for (const playerId in this.players) {
-      if (playerId !== shooterId) {
-        const player = this.players[playerId];
-        const bulletPosition = new THREE.Vector3(
-          bulletData.position.x,
-          bulletData.position.y,
-          bulletData.position.z
-        );
-        const distanceSquared =
-          player.position.distanceToSquared(bulletPosition);
-        if (distanceSquared < 1) {
-          if (player.takeDamage(2)) {
-            this.respawnPlayer(playerId);
-          } else {
-            this.io
-              .to(playerId)
-              .emit("updateHealth", { health: player.health });
-          }
-        }
-      }
-    }
-  }
-
-  onPlayerHit(playerId) {
-    const player = this.players[playerId];
-    if (player && player.takeDamage(2)) {
-      this.respawnPlayer(playerId);
-    } else {
-      this.io.to(playerId).emit("updateHealth", { health: player.health });
-    }
-  }
-
-  respawnPlayer(playerId) {
-    const player = this.players[playerId];
-    player.respawn();
-    this.io.emit("playerDied", playerId);
   }
 
   onDisconnect(socket) {

@@ -19,7 +19,7 @@ class Game {
     this.capsule = null;
     this.prevTime = performance.now();
     this.isFiring = false;
-    this.fireRate = 40; // Milliseconds between shots
+    this.fireRate = 500; // Milliseconds between shots
 
     this.initScene = new SceneInit();
     this.init();
@@ -28,7 +28,6 @@ class Game {
 
   init() {
     this.camera = this.initScene.getCamera();
-    this.camera.position.set(0, 74, 52);
 
     this.scene = this.initScene.getScene();
 
@@ -88,18 +87,6 @@ class Game {
       this.checkBulletHit(data.shooterId, bullet);
     });
 
-    socket.on("updateHealth", (data) => {
-      this.updatePlayerHealth(socket.id, data.health);
-    });
-
-    socket.on("playerDied", (playerId) => {
-      if (playerId === socket.id) {
-        alert("You died! Respawning...");
-      } else {
-        console.log(`Player ${playerId} died`);
-      }
-    });
-
     socket.on("playerDisconnected", (id) => {
       if (this.players[id]) {
         this.scene.remove(this.players[id].mesh);
@@ -138,7 +125,7 @@ class Game {
   shoot() {
     const bulletVelocity = new THREE.Vector3();
     this.camera.getWorldDirection(bulletVelocity); // Get the direction the camera is facing
-    bulletVelocity.multiplyScalar(200); // Adjust bullet speed as needed
+    bulletVelocity.multiplyScalar(50); // Adjust bullet speed as needed
 
     const bullet = new Bullet(this.camera.position.clone(), bulletVelocity);
     this.scene.add(bullet.mesh);
@@ -157,36 +144,6 @@ class Game {
         z: bullet.velocity.z,
       },
     });
-  }
-
-  checkBulletHit(shooterId, bullet) {
-    // Check if the bullet hits other players
-    for (const playerId in this.players) {
-      if (playerId !== shooterId) {
-        const playerPosition = this.players[playerId].mesh.position;
-        const bulletPosition = bullet.mesh.position;
-        const distanceSquared =
-          playerPosition.distanceToSquared(bulletPosition);
-
-        // Adjust the threshold for hit detection as needed
-        if (distanceSquared < 1) {
-          // Emit an event to update health on the server side
-          socket.emit("playerHit", { playerId });
-          break; // Exit loop after hitting one player
-        }
-      }
-    }
-  }
-
-  updatePlayerHealth(playerId, health) {
-    if (this.players[playerId]) {
-      this.players[playerId].health = health;
-
-      if (playerId === socket.id) {
-        const healthDisplay = document.getElementById("healthBar");
-        healthDisplay.textContent = "Health: " + health;
-      }
-    }
   }
 
   addPlayer(playerInfo) {
@@ -213,7 +170,7 @@ class Game {
     const time = performance.now();
     const delta = (time - this.prevTime) / 1000;
 
-    this.camera.position.y += 3;
+    this.camera.position.y += 1.5;
 
     socket.emit("playerMove", { position: this.capsule.position });
 
