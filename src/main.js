@@ -44,7 +44,22 @@ class Game {
     this.setupSocketListeners();
     this.setupEventListeners();
   }
+  checkBulletHit(shooterId, bullet) {
+    // Iterate over all players except the shooter
+    Object.keys(this.players).forEach((id) => {
+      if (id !== shooterId) {
+        const player = this.players[id];
+        const distance = bullet.mesh.position.distanceTo(player.mesh.position);
+        const playerRadius = 1.5; // Adjust this based on your player size
+        const bulletRadius = 0.5; // Adjust this based on your bullet size
 
+        if (distance < playerRadius + bulletRadius) {
+          console.log(`Client: Player ${shooterId} hit Player ${id}`);
+          // You could add visual effects here, like reducing player health, etc.
+        }
+      }
+    });
+  }
   setupSocketListeners() {
     socket.on("currentPlayers", (currentPlayers) => {
       Object.keys(currentPlayers).forEach((id) => {
@@ -85,6 +100,11 @@ class Game {
       this.bullets.push(bullet);
 
       this.checkBulletHit(data.shooterId, bullet);
+    });
+    socket.on("bulletHit", (data) => {
+      console.log(
+        `Client: Player ${data.shooterId} hit Player ${data.targetId}`
+      );
     });
 
     socket.on("playerDisconnected", (id) => {

@@ -24,6 +24,8 @@ class GameServer {
     this.server = http.createServer(this.app);
     this.io = new Server(this.server);
     this.players = {};
+    this.bulletRadius = 0.5;
+    this.playerRadius = 1.5;
 
     this.app.use(express.static(path.join(__dirname)));
 
@@ -53,7 +55,39 @@ class GameServer {
 
   onShoot(socket, bulletData) {
     const shooterId = socket.id;
+    this.checkBulletCollisions(shooterId, bulletData);
     socket.broadcast.emit("playerShot", { shooterId, bulletData });
+  }
+
+  checkBulletCollisions(shooterId, bulletData) {
+    const bulletPosition = new THREE.Vector3(
+      bulletData.position.x,
+      bulletData.position.y,
+      bulletData.position.z
+    );
+
+    Object.keys(this.players).forEach((id) => {
+      if (id !== shooterId) {
+        const player = this.players[id];
+        const distance = bulletPosition.distanceTo(player.position);
+        if (distance < this.bulletRadius + this.playerRadius) {
+          console.log(`Player ${shooterId} hit Player ${id}`);
+
+          // Emit an event to inform clients about the hit
+          this.io.emit("bulletHit", { shooterId, targetId: id });
+
+          // Optionally, handle hit detection, like reducing health
+          player.health -= 10; // Example: reduce health by 10
+          if (player.health <= 0) {
+            console.log(
+              `Player ${id} has been eliminated by Player ${shooterId}`
+            );
+            // Emit an event for player elimination
+            this.io.emit("playerEliminated", { shooterId, targetId: id });
+          }
+        }
+      }
+    });
   }
 
   onDisconnect(socket) {
