@@ -5,7 +5,6 @@ class Box {
     this.geometry = new THREE.BoxGeometry(1, 1, 1);
     this.material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     this.cube = new THREE.InstancedMesh(this.geometry, this.material, 1);
-    // this.cube.userData.zoom = true;
     this.position = new THREE.Vector3();
     this.position.set(2, 8, 0);
   }

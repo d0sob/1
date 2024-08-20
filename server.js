@@ -8,10 +8,8 @@ class Player {
   constructor(id) {
     this.id = id;
     this.position = new THREE.Vector3(0, 74, 52);
-    this.health = Player.initialHealth;
+    this.modelData = {}; // Placeholder for model-specific data
   }
-
-  static initialHealth = 100;
 
   move(position) {
     this.position.set(position.x, position.y, position.z);
@@ -24,8 +22,6 @@ class GameServer {
     this.server = http.createServer(this.app);
     this.io = new Server(this.server);
     this.players = {};
-    this.bulletRadius = 0.5;
-    this.playerRadius = 1.5;
 
     this.app.use(express.static(path.join(__dirname)));
 
@@ -37,8 +33,11 @@ class GameServer {
     const newPlayer = new Player(socket.id);
     this.players[socket.id] = newPlayer;
 
-    socket.emit("currentPlayers", this.players);
-    socket.broadcast.emit("newPlayer", newPlayer);
+    // Send the current players and their model data to the new player
+    socket.emit("currentPlayers", this.getPlayersModelData());
+
+    // Broadcast new player to other clients
+    socket.broadcast.emit("newPlayer", this.getPlayerModelData(newPlayer));
 
     socket.on("playerMove", (data) => this.onPlayerMove(socket, data));
     socket.on("shoot", (bulletData) => this.onShoot(socket, bulletData));
@@ -49,51 +48,38 @@ class GameServer {
     const player = this.players[socket.id];
     if (player) {
       player.move(data.position);
-      socket.broadcast.emit("playerMoved", player);
+      // Broadcast updated player data to all clients
+      socket.broadcast.emit("playerMoved", this.getPlayerModelData(player));
     }
   }
 
   onShoot(socket, bulletData) {
     const shooterId = socket.id;
-    this.checkBulletCollisions(shooterId, bulletData);
+    // Broadcast shooting event with shooter ID and bullet data
     socket.broadcast.emit("playerShot", { shooterId, bulletData });
-  }
-
-  checkBulletCollisions(shooterId, bulletData) {
-    const bulletPosition = new THREE.Vector3(
-      bulletData.position.x,
-      bulletData.position.y,
-      bulletData.position.z
-    );
-
-    Object.keys(this.players).forEach((id) => {
-      if (id !== shooterId) {
-        const player = this.players[id];
-        const distance = bulletPosition.distanceTo(player.position);
-        if (distance < this.bulletRadius + this.playerRadius) {
-          console.log(`Player ${shooterId} hit Player ${id}`);
-
-          // Emit an event to inform clients about the hit
-          this.io.emit("bulletHit", { shooterId, targetId: id });
-
-          // Optionally, handle hit detection, like reducing health
-          player.health -= 10; // Example: reduce health by 10
-          if (player.health <= 0) {
-            console.log(
-              `Player ${id} has been eliminated by Player ${shooterId}`
-            );
-            // Emit an event for player elimination
-            this.io.emit("playerEliminated", { shooterId, targetId: id });
-          }
-        }
-      }
-    });
   }
 
   onDisconnect(socket) {
     console.log("A user disconnected:", socket.id);
     delete this.players[socket.id];
+    // Notify all clients of the disconnection
     this.io.emit("playerDisconnected", socket.id);
+  }
+
+  getPlayersModelData() {
+    const data = {};
+    for (const id in this.players) {
+      data[id] = this.getPlayerModelData(this.players[id]);
+    }
+    return data;
+  }
+
+  getPlayerModelData(player) {
+    return {
+      id: player.id,
+      position: player.position,
+      modelData: player.modelData, // Placeholder for model data
+    };
   }
 
   start(port) {

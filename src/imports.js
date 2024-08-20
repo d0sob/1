@@ -5,5 +5,6 @@ import Capsule from "./Capsule.js";
 import Box from "./box.js";
 import * as THREE from "three";
 import Bullet from "./bullet.js";
+import ModelLoader from "./model.js";
 
-export { Bullet, SceneInit, Plane, Controls, Capsule, Box, THREE };
+export { Bullet, SceneInit, Plane, Controls, Capsule, Box, THREE, ModelLoader };

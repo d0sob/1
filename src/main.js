@@ -6,6 +6,7 @@ import {
   Plane,
   SceneInit,
 } from "./imports.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const socket = io();
 
@@ -13,64 +14,131 @@ class Game {
   constructor() {
     this.players = {};
     this.bullets = [];
-    this.camera = null;
-    this.scene = null;
-    this.controls = null;
-    this.capsule = null;
     this.prevTime = performance.now();
     this.isFiring = false;
-    this.fireRate = 500; // Milliseconds between shots
+    this.fireRate = 150; // Milliseconds between shots
+    this.bulletSpeed = 100;
 
     this.initScene = new SceneInit();
+    this.createShader();
     this.init();
     this.animate();
+  }
+  createShader() {
+    // Vertex Shader
+    const vertexShader = `
+  varying vec2 vUv;
+  varying vec3 vNormal;
+
+  void main() {
+    vUv = uv;
+    vNormal = normal;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+    // Fragment Shader
+    const fragmentShader = `
+    uniform sampler2D map;
+uniform vec3 lightColor;
+varying vec2 vUv;
+varying vec3 vNormal;
+
+void main() {
+  vec4 textureColor = texture2D(map, vUv);
+  
+  // Simulated light intensity
+  float intensity = max(dot(normalize(vNormal), normalize(vec3(0.5, 0.8, 1.0))), 0.0);
+  
+  // Apply toon shading (smoothstep for a gradual transition)
+  float toonIntensity = smoothstep(0.2, 0.8, intensity);
+  
+  // Enhance color saturation
+  vec3 saturatedColor = textureColor.rgb * 1.5; // Increase saturation factor as needed
+  
+  // Combine texture with toon shading
+  vec3 colorWithShading = saturatedColor * toonIntensity * lightColor;
+  
+  // Apply dark blue tint
+  vec3 blueTint = vec3(0.0, 0.0, 0.2); // Adjust the blue value for the desired tint
+  vec3 tintedColor = mix(colorWithShading, blueTint, 0.2); // Adjust the mix factor for tint strength
+  
+  // Ensure brightness is not too low
+  vec3 brightColor = mix(tintedColor, saturatedColor, 0.3); // Adjust the mix factor for desired brightness
+  
+  // Final color output
+  gl_FragColor = vec4(brightColor, textureColor.a);
+}
+
+`;
+
+    // Create Shader Material
+    this.shaderMaterial = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      uniforms: {
+        map: { type: "t", value: null },
+        lightColor: { type: "c", value: new THREE.Color(0xffffff) },
+      },
+    });
   }
 
   init() {
     this.camera = this.initScene.getCamera();
-
     this.scene = this.initScene.getScene();
-
     this.capsule = new Capsule().getMesh();
     this.scene.add(this.capsule);
     this.capsule.position.y = 3;
 
     this.controls = new Controls(this.camera, this.capsule);
 
-    const floor = new Plane().getMesh();
-    this.scene.add(floor);
-    floor.position.y = -2;
+    const loader = new GLTFLoader();
+    loader.load(
+      "./src/collision-world.glb",
+      (gltf) => {
+        this.map = gltf.scene;
+        this.map.traverse((child) => {
+          if (child.isMesh) {
+            // Preserve original texture
+            const originalTexture = child.material.map;
+
+            // Apply shader material
+            const material = this.shaderMaterial.clone();
+            material.uniforms.map.value = originalTexture; // Assign the original texture
+
+            child.material = material;
+          }
+        });
+        // this.map.scale.set(2, 2, 2);
+        this.scene.add(this.map);
+        console.log("Model loaded successfully");
+        // Now it's safe to proceed with code that depends on the model
+      },
+      undefined,
+      (error) => {
+        console.error("An error occurred while loading the model:", error);
+      }
+    );
 
     this.setupSocketListeners();
     this.setupEventListeners();
   }
-  checkBulletHit(shooterId, bullet) {
-    // Iterate over all players except the shooter
-    Object.keys(this.players).forEach((id) => {
-      if (id !== shooterId) {
-        const player = this.players[id];
-        const distance = bullet.mesh.position.distanceTo(player.mesh.position);
-        const playerRadius = 1.5; // Adjust this based on your player size
-        const bulletRadius = 0.5; // Adjust this based on your bullet size
 
-        if (distance < playerRadius + bulletRadius) {
-          console.log(`Client: Player ${shooterId} hit Player ${id}`);
-          // You could add visual effects here, like reducing player health, etc.
-        }
-      }
-    });
-  }
   setupSocketListeners() {
     socket.on("currentPlayers", (currentPlayers) => {
       Object.keys(currentPlayers).forEach((id) => {
         if (id !== socket.id) {
           this.addPlayer(currentPlayers[id]);
+          // ALL PLAYERS IN LOBBY EXCEPT YOU
+          // console.log(`${id} joined.`);
         }
       });
     });
 
     socket.on("newPlayer", (player) => {
       this.addPlayer(player);
+      // NEW PLAYER JOINED
+      console.log(`Player ${player.id} joined.`);
     });
 
     socket.on("playerMoved", (player) => {
@@ -80,6 +148,10 @@ class Game {
           player.position.y,
           player.position.z
         );
+        // THIS GIVES OTHER PLAYERS POSITION
+        // console.log(
+        //   `Player ${player.id} position @ (${player.position.x},${player.position.y}, ${player.position.z})`
+        // );
       }
     });
 
@@ -98,13 +170,6 @@ class Game {
       );
       this.scene.add(bullet.mesh);
       this.bullets.push(bullet);
-
-      this.checkBulletHit(data.shooterId, bullet);
-    });
-    socket.on("bulletHit", (data) => {
-      console.log(
-        `Client: Player ${data.shooterId} hit Player ${data.targetId}`
-      );
     });
 
     socket.on("playerDisconnected", (id) => {
@@ -145,7 +210,7 @@ class Game {
   shoot() {
     const bulletVelocity = new THREE.Vector3();
     this.camera.getWorldDirection(bulletVelocity); // Get the direction the camera is facing
-    bulletVelocity.multiplyScalar(50); // Adjust bullet speed as needed
+    bulletVelocity.multiplyScalar(this.bulletSpeed); // Adjust bullet speed as needed
 
     const bullet = new Bullet(this.camera.position.clone(), bulletVelocity);
     this.scene.add(bullet.mesh);
@@ -167,9 +232,7 @@ class Game {
   }
 
   addPlayer(playerInfo) {
-    const playerGeo = new THREE.CapsuleGeometry(1, 2, 10, 30);
-    const playerMat = new THREE.MeshBasicMaterial({ color: "white" });
-    const playerMesh = new THREE.Mesh(playerGeo, playerMat);
+    const playerMesh = new Capsule().getMesh();
     playerMesh.position.set(
       playerInfo.position.x,
       playerInfo.position.y,
@@ -179,7 +242,6 @@ class Game {
     this.players[playerInfo.id] = {
       mesh: playerMesh,
       position: playerMesh.position,
-      health: playerInfo.health,
     };
   }
 
