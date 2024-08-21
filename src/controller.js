@@ -2,24 +2,47 @@ import * as THREE from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 export default class Controls {
-  constructor(camera, gamer) {
+  constructor(camera, player, map) {
     this.camera = camera;
-    this.gamer = gamer;
+    this.player = player;
+    this.map = map;
+    this.gravity = -0.0008;
+    this.velocityY = 0;
+    this.falling = true;
+
     this.rendererElement = document.getElementById("threejs-stuff");
     this.controls = new PointerLockControls(this.camera, this.rendererElement);
     document.addEventListener("click", () => {
       this.controls.lock();
-
       this.handleKeyStrokes();
-      this.updateMovement();
-
-      this.raycaster = new THREE.Raycaster(
-        new THREE.Vector3(),
-        new THREE.Vector3(0, -1, 0),
-        0,
-        1.5 // Adjust the ray length as needed
-      );
     });
+    this.raycaster = new THREE.Raycaster(
+      new THREE.Vector3(),
+      new THREE.Vector3(0, -1, 0),
+      0,
+      5
+    );
+
+    this.createArrowHelper();
+  }
+  createArrowHelper() {
+    this.rayDirection = new THREE.Vector3(0, -1, 0).normalize();
+    const rayOrigin = this.player.position.clone();
+    const length = 5;
+
+    this.arrowHelper = new THREE.ArrowHelper(
+      this.rayDirection,
+      rayOrigin,
+      length,
+      0xff0000
+    );
+    return this.arrowHelper;
+  }
+  updateArrow() {
+    this.arrowHelper.position.copy(this.player.position);
+    const camDir = new THREE.Vector3();
+    this.camera.getWorldDirection(camDir);
+    this.arrowHelper.setDirection(camDir);
   }
   handleKeyStrokes() {
     document.addEventListener("keydown", (e) => {
@@ -70,30 +93,79 @@ export default class Controls {
       }
     });
   }
+  chooseMovement(smm = false) {
+    if (smm == true) {
+      this.spectatorModeMovement();
+    } else {
+      this.normalMovement();
+    }
+  }
+  normalMovement() {
+    const delta = 0.1;
+    const direction = new THREE.Vector3();
 
-  updateMovement() {
-    // console.log("Move Forward:", this.moveForward);
-    // console.log("Move Backward:", this.moveBackward);
-    // console.log("Move Left:", this.moveLeft);
-    // console.log("Move Right:", this.moveRight);
+    if (this.falling) {
+      this.velocityY += this.gravity;
+      direction.y += this.velocityY;
+    }
+
+    // Ensure raycaster is defined before using it
+    if (this.raycaster) {
+      this.raycaster.ray.origin.copy(this.player.position);
+
+      if (this.map) {
+        const intersects = this.raycaster.intersectObject(this.map, true);
+
+        if (intersects.length > 0) {
+          const distanceToGround = intersects[0].distance;
+          console.log(distanceToGround);
+          if (distanceToGround <= 10) {
+            this.velocityY = 0;
+            this.falling = false;
+            this.player.position.y = intersects[0].point.y;
+          } else {
+            this.falling = true;
+          }
+        } else {
+          this.falling = true;
+        }
+      }
+    }
+
+    // Movement logic
+    if (this.moveForward) {
+      direction.z -= delta;
+    }
+    if (this.moveBackward) {
+      direction.z += delta;
+    }
+    if (this.moveLeft) {
+      direction.x -= delta;
+    }
+    if (this.moveRight) {
+      direction.x += delta;
+    }
+
+    direction.applyQuaternion(this.camera.quaternion);
+    this.player.position.add(direction);
+    this.camera.position.copy(this.player.position);
+  }
+
+  spectatorModeMovement() {
     const delta = 0.1; // Movement speed factor
     const direction = new THREE.Vector3();
 
     if (this.moveForward) {
       direction.z -= delta;
-      // console.log("moving forward");
     }
     if (this.moveBackward) {
       direction.z += delta;
-      // console.log("moving backward");
     }
     if (this.moveLeft) {
       direction.x -= delta;
-      // console.log("moving left");
     }
     if (this.moveRight) {
       direction.x += delta;
-      // console.log("moving right");
     }
     if (this.moveUp) {
       direction.y += delta;
@@ -104,7 +176,8 @@ export default class Controls {
 
     // Apply the movement direction to the camera
     direction.applyQuaternion(this.camera.quaternion);
-    this.gamer.position.add(direction);
-    this.camera.position.copy(this.gamer.position);
+    this.player.position.add(direction);
+    this.camera.position.copy(this.player.position);
+    this.updateArrow();
   }
 }

@@ -10,7 +10,7 @@ class SceneInit {
       0.1,
       1000
     );
-
+    this.camera.position.y += 5;
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setAnimationLoop(this.render.bind(this));

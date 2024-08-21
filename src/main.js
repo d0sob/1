@@ -16,7 +16,7 @@ class Game {
     this.bullets = [];
     this.prevTime = performance.now();
     this.isFiring = false;
-    this.fireRate = 150; // Milliseconds between shots
+    this.fireRate = 50; // Milliseconds between shots
     this.bulletSpeed = 100;
 
     this.initScene = new SceneInit();
@@ -90,8 +90,6 @@ void main() {
     this.scene.add(this.capsule);
     this.capsule.position.y = 3;
 
-    this.controls = new Controls(this.camera, this.capsule);
-
     const loader = new GLTFLoader();
     loader.load(
       "./src/collision-world.glb",
@@ -99,20 +97,15 @@ void main() {
         this.map = gltf.scene;
         this.map.traverse((child) => {
           if (child.isMesh) {
-            // Preserve original texture
             const originalTexture = child.material.map;
-
-            // Apply shader material
             const material = this.shaderMaterial.clone();
             material.uniforms.map.value = originalTexture; // Assign the original texture
-
             child.material = material;
           }
         });
-        // this.map.scale.set(2, 2, 2);
+        this.map.scale.set(2, 2, 2);
         this.scene.add(this.map);
         console.log("Model loaded successfully");
-        // Now it's safe to proceed with code that depends on the model
       },
       undefined,
       (error) => {
@@ -120,6 +113,8 @@ void main() {
       }
     );
 
+    this.controls = new Controls(this.camera, this.capsule, this.map);
+    this.scene.add(this.controls.createArrowHelper());
     this.setupSocketListeners();
     this.setupEventListeners();
   }
@@ -248,11 +243,9 @@ void main() {
   animate() {
     requestAnimationFrame(() => this.animate());
 
-    this.controls.updateMovement();
+    this.controls.chooseMovement(true);
     const time = performance.now();
     const delta = (time - this.prevTime) / 1000;
-
-    this.camera.position.y += 1.5;
 
     socket.emit("playerMove", { position: this.capsule.position });
 
@@ -267,7 +260,6 @@ void main() {
         this.bullets.splice(i, 1);
       }
     }
-
     this.prevTime = time;
     this.initScene.render();
   }
